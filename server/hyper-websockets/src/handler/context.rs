@@ -1,4 +1,4 @@
-use crate::message::{Message, RawMessage};
+use crate::message::{Message, PartialMessage, RawMessage};
 
 use futures::SinkExt;
 use hyper::upgrade::Upgraded;
@@ -6,9 +6,10 @@ use hyper_tungstenite::WebSocketStream;
 use serde::Serialize;
 
 use crate::error::Result;
+use crate::message::parse::to_raw_message;
 
 pub struct Context {
-    pub message: Message,
+    pub message: PartialMessage,
     stream: WebSocketStream<Upgraded>,
 }
 
@@ -17,17 +18,15 @@ impl Context {
     where
         T: Serialize,
     {
-        let serialized_params: serde_json::Value = serde_json::to_value(params)?;
-
         let new_msg = Message {
             id: self.message.id,
             event: event_name.to_string(),
-            params: serialized_params,
+            params,
         };
 
-        let serialized_msg = serde_json::to_string(&new_msg)?;
+        let raw_msg = to_raw_message(new_msg)?;
 
-        self.stream.send(RawMessage::Text(serialized_msg)).await?;
+        self.stream.send(raw_msg).await?;
 
         Ok(())
     }
