@@ -2,5 +2,5 @@
 
 members = [
     "webrtc-server",
-    "actix-websocket"
+    "hyper-websockets"
 ]

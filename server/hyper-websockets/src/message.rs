@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
+
+pub use hyper_tungstenite::tungstenite::Message as RawMessage;
 
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub id: u16,
-    pub msg_type: String,
+    pub event: String,
     /* Deserialize later in handler dependent on msg_type */
-    pub params: Box<RawValue>,
+    pub params: serde_json::Value,
 }

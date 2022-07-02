@@ -1,21 +1,14 @@
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
-use actix_web_actors::ws;
-use actix_websocket::{handler::ConnHandler, message::Message};
+use hyper::service::Service;
+use hyper::{Body, Request, Response, Server};
+use hyper_websockets::service::WebsocketService;
 
-async fn ws_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let conn = ConnHandler::builder()
-        .add_handler("hello", ws_handler)
-        .build();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = ([127, 0, 0, 1], 3000).into();
 
-    ws::start(conn, &req, stream)
-}
+    let server = Server::bind(&addr).serve(WebsocketService {});
+    println!("Listening on http://{}", addr);
 
-fn ws_handler(msg: Message) {}
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().route("/ws/", web::get().to(ws_route)))
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+    server.await?;
+    Ok(())
 }
