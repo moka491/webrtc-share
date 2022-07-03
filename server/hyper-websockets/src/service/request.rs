@@ -3,8 +3,13 @@ use std::sync::Arc;
 use futures::{sink::SinkExt, stream::StreamExt};
 use hyper::{Body, Request, Response};
 use hyper_tungstenite::{tungstenite::Message, HyperWebsocket};
+use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::{error::WsResult, handler::HandlerMap};
+use crate::{
+    error::WsResult,
+    handler::{context::Context, HandlerMap},
+    message::{parse::partial_from_raw_message, PartialMessage, RawMessage},
+};
 
 pub async fn handle_request(
     request: Request<Body>,
@@ -37,9 +42,19 @@ pub async fn serve_websocket(websocket: HyperWebsocket, handlers: Arc<HandlerMap
         match message? {
             Message::Text(msg) => {
                 println!("Received text message: {}", msg);
-                websocket
-                    .send(Message::text("Thank you, come again."))
-                    .await?;
+
+                let partial: PartialMessage = partial_from_raw_message(&msg)?;
+
+                if let Some(handler) = handlers.get(&partial.event) {
+                    let (tx, mut rx): (Sender<RawMessage>, Receiver<RawMessage>) = mpsc::channel(3);
+                    let ctx = Context::from(partial, tx);
+
+                    (handler)(ctx).await?;
+
+                    if let Some(raw_msg) = rx.try_recv().ok() {
+                        websocket.send(raw_msg).await?;
+                    }
+                }
             }
             _ => (),
         }

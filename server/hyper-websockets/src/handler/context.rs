@@ -1,8 +1,7 @@
-use crate::message::{Message, PartialMessage};
+use tokio::sync::mpsc::Sender;
 
-use futures::SinkExt;
-use hyper::upgrade::Upgraded;
-use hyper_tungstenite::WebSocketStream;
+use crate::message::{Message, PartialMessage, RawMessage};
+
 use serde::{Deserialize, Serialize};
 
 use crate::error::WsResult;
@@ -10,10 +9,14 @@ use crate::message::parse::{message_from_partial, to_raw_message};
 
 pub struct Context {
     message: PartialMessage,
-    stream: WebSocketStream<Upgraded>,
+    socket_tx: Sender<RawMessage>,
 }
 
 impl Context {
+    pub fn from(message: PartialMessage, socket_tx: Sender<RawMessage>) -> Self {
+        Self { message, socket_tx }
+    }
+
     pub fn parse_message<T>(&self) -> WsResult<Message<T>>
     where
         T: for<'de> Deserialize<'de>,
@@ -33,7 +36,7 @@ impl Context {
 
         let raw_msg = to_raw_message(new_msg)?;
 
-        self.stream.send(raw_msg).await?;
+        self.socket_tx.send(raw_msg);
 
         Ok(())
     }

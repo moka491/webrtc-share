@@ -2,6 +2,7 @@ use hyper::{service::Service, Body, Request, Response};
 
 use crate::error::WsResult;
 use crate::handler::{HandlerMap, MessageHandlerFn};
+use std::clone;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;

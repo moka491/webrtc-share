@@ -8,6 +8,7 @@ use crate::{
 };
 pub mod context;
 
-pub type MessageHandlerFn = fn(Context) -> WsResult<()>;
+pub type MessageHandlerFn =
+    Box<(dyn Fn(Context) -> Pin<Box<(dyn Future<Output = WsResult<()>> + Send)>> + Send + Sync)>;
 
 pub type HandlerMap = HashMap<String, MessageHandlerFn>;
