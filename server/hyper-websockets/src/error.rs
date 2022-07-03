@@ -15,4 +15,4 @@ pub enum Error {
     SerdeError(#[from] serde_json::Error),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type WsResult<T> = std::result::Result<T, Error>;

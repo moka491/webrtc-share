@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+// Calling this "RawMessage" in the rest of the crate to differentiate
+// from the Message type that this crate consumes
 pub use hyper_tungstenite::tungstenite::Message as RawMessage;
 
 pub mod parse;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Message<T> {
-    pub id: u16,
+    pub id: u32,
     pub event: String,
     pub params: T,
 }

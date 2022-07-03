@@ -1,15 +1,16 @@
-use crate::error::Result;
+use crate::{
+    error::WsResult,
+    message::{Message, PartialMessage, RawMessage},
+};
 use serde::{Deserialize, Serialize};
 
-use super::{Message, PartialMessage, RawMessage};
-
-pub fn partial_from_raw_message(raw_text_msg: &str) -> Result<PartialMessage> {
+pub fn partial_from_raw_message(raw_text_msg: &str) -> WsResult<PartialMessage> {
     let partial_msg: PartialMessage = serde_json::from_str(raw_text_msg)?;
 
     Ok(partial_msg)
 }
 
-pub fn message_from_partial<T>(partial_msg: PartialMessage) -> Result<Message<T>>
+pub fn message_from_partial<T>(partial_msg: PartialMessage) -> WsResult<Message<T>>
 where
     T: for<'de> Deserialize<'de>,
 {
@@ -22,7 +23,7 @@ where
     })
 }
 
-pub fn to_raw_message<T>(msg: Message<T>) -> Result<RawMessage>
+pub fn to_raw_message<T>(msg: Message<T>) -> WsResult<RawMessage>
 where
     T: Serialize,
 {

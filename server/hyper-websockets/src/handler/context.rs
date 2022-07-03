@@ -1,20 +1,27 @@
-use crate::message::{Message, PartialMessage, RawMessage};
+use crate::message::{Message, PartialMessage};
 
 use futures::SinkExt;
 use hyper::upgrade::Upgraded;
 use hyper_tungstenite::WebSocketStream;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-use crate::error::Result;
-use crate::message::parse::to_raw_message;
+use crate::error::WsResult;
+use crate::message::parse::{message_from_partial, to_raw_message};
 
 pub struct Context {
-    pub message: PartialMessage,
+    message: PartialMessage,
     stream: WebSocketStream<Upgraded>,
 }
 
 impl Context {
-    pub async fn reply<T>(&mut self, event_name: &str, params: T) -> Result<()>
+    pub fn parse_message<T>(&self) -> WsResult<Message<T>>
+    where
+        T: for<'de> Deserialize<'de>,
+    {
+        message_from_partial(self.message.clone())
+    }
+
+    pub async fn reply<T>(&mut self, event_name: &str, params: T) -> WsResult<()>
     where
         T: Serialize,
     {

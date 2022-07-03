@@ -1,18 +1,22 @@
+use std::sync::Arc;
+
 use futures::{sink::SinkExt, stream::StreamExt};
 use hyper::{Body, Request, Response};
-use hyper_tungstenite::tungstenite::Message;
-use hyper_tungstenite::HyperWebsocket;
+use hyper_tungstenite::{tungstenite::Message, HyperWebsocket};
 
-use crate::error::Result;
+use crate::{error::WsResult, handler::HandlerMap};
 
-pub async fn handle_request(request: Request<Body>) -> Result<Response<Body>> {
+pub async fn handle_request(
+    request: Request<Body>,
+    handlers: Arc<HandlerMap>,
+) -> WsResult<Response<Body>> {
     // Check if the request is a websocket upgrade request.
     if hyper_tungstenite::is_upgrade_request(&request) {
         let (response, websocket) = hyper_tungstenite::upgrade(request, None)?;
 
         // Spawn a task to handle the websocket connection.
         tokio::spawn(async move {
-            if let Err(e) = serve_websocket(websocket).await {
+            if let Err(e) = serve_websocket(websocket, handlers).await {
                 eprintln!("Error in websocket connection: {}", e);
             }
         });
@@ -26,7 +30,7 @@ pub async fn handle_request(request: Request<Body>) -> Result<Response<Body>> {
 }
 
 /// Handle a websocket connection.
-pub async fn serve_websocket(websocket: HyperWebsocket) -> Result<()> {
+pub async fn serve_websocket(websocket: HyperWebsocket, handlers: Arc<HandlerMap>) -> WsResult<()> {
     let mut websocket = websocket.await?;
 
     while let Some(message) = websocket.next().await {
